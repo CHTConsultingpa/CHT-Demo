@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="backend_layout" name="Google Tag Manager" inherit_id="web.layout">
+        <xpath expr="//head" position="inside">
+            <script t-if="website and website.google_tag_manager_key and not editable">
+                (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+                j=d.createElement(s),dl=l!='dataLayer'?'&amp;l='+l:'';j.async=true;j.src=
+                'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+                })(window,document,'script','dataLayer','<t t-esc="website.google_tag_manager_key"/>');
+            </script>
+        </xpath>
+    </template>
+
+    <template id="frontend_layout" name="Google Tag Manager NoScript" inherit_id="website.layout">
+        <xpath expr="//div[@id='wrapwrap']" position="before">
+            <noscript t-if="website and website.google_tag_manager_key and not editable">
+                <iframe t-attf-src="https://www.googletagmanager.com/ns.html?id={{ website.google_tag_manager_key }}" height="0" width="0" style="display:none; visibility:hidden"></iframe>
+            </noscript>
+        </xpath>
+    </template>
+
+    <template id="gtm_add_variable" inherit_id="portal.frontend_layout" name="Google Tag Manager Variable">
+        <xpath expr="//nav" position="before">
+            <script type="text/javascript">
+                dataLayer = [];
+            </script>
+        </xpath>
+    </template>
+    <!-- this template adds to the `Add to cart` link properties that are needed
+    to be sent to GTM dataLayer -->
+    <template id="gtm_add_to_cart" inherit_id="website_sale.product" priority="99">
+        <xpath expr="//a[@id='add_to_cart']" position="attributes">
+            <attribute name="t-att-data-name" add="product.name" separator=" "/>
+            <attribute name="t-att-data-code" add="product.default_code or product.id" separator=" "/>
+            <attribute name="t-att-data-pid" add="product.id" separator=" "/>
+            <attribute name="t-att-data-price" add="product.list_price" separator=" "/>
+            <attribute name="t-att-data-category" add="product.public_categ_ids and product.public_categ_ids[0].name" separator=" "/>
+            <attribute name="t-att-data-company" add="website.company_id.name" separator=" "/>
+            <attribute name="t-att-data-currency" add="website.currency_id.name" separator=" "/>
+        </xpath>
+    </template>
+
+    <template id="add_class_to_product_items"  inherit_id="website_sale.products_item" priority="99">
+        <!-- adding parameters to clickable link and image -->
+        <xpath expr="//div[hasclass('oe_product_image')]/a" position="attributes">
+            <attribute name="class" add="oe_product_image_link" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('oe_product_image')]/a" position="attributes">
+            <attribute name="t-att-data-name" add="product.name" separator=" "/>
+            <attribute name="t-att-data-code" add="product.default_code or product.id" separator=" "/>
+            <attribute name="t-att-data-pid" add="product.id" separator=" "/>
+            <attribute name="t-att-data-price" add="product.list_price" separator=" "/>
+            <attribute name="t-att-data-category" add="product.public_categ_ids and product.public_categ_ids[0].name" separator=" "/>
+            <attribute name="t-att-data-company" add="website.company_id.name" separator=" "/>
+        </xpath>
+        <xpath expr="//h6/a[@t-field='product.name']" position="attributes">
+            <attribute name="class" add="oe_product_name_link" separator=" "/>
+        </xpath>
+        <xpath expr="//h6/a[@t-field='product.name']" position="attributes">
+            <attribute name="t-att-data-name" add="product.name" separator=" "/>
+            <attribute name="t-att-data-code" add="product.default_code or product.id" separator=" "/>
+            <attribute name="t-att-data-pid" add="product.id" separator=" "/>
+            <attribute name="t-att-data-price" add="product.list_price" separator=" "/>
+            <attribute name="t-att-data-category" add="product.public_categ_ids and product.public_categ_ids[0].name" separator=" "/>
+            <attribute name="t-att-data-company" add="website.company_id.name" separator=" "/>
+        </xpath>
+    </template>
+    <template id="google_tag_manager_remove_from_cart_data" inherit_id="website_sale.cart_lines" priority="99">
+    <!-- adding parameters to trashcan on the product list on the cart -->
+        <xpath expr="//a[hasclass('js_delete_product')]" position="attributes">
+            <attribute name="t-att-data-name" add="line.product_id.name" separator=" "/>
+            <attribute name="t-att-data-code" add="line.product_id.default_code or line.product_id.id" separator=" "/>
+            <attribute name="t-att-data-pid" add="line.product_id.id" separator=" "/>
+            <attribute name="t-att-data-price" add="line.product_id.list_price" separator=" "/>
+            <attribute name="t-att-data-category" add="line.product_id.public_categ_ids and line.product_id.public_categ_ids[0].name" separator=" "/>
+            <attribute name="t-att-data-company" add="website.company_id.name" separator=" "/>
+        </xpath>
+    </template>
+    <template id="gta_confirmation" inherit_id="website_sale.confirmation" priority="99">
+        <xpath expr="//div[@id='oe_structure_website_sale_confirmation_3']" position="after">
+            <script type="text/javascript" id="gta_confirmation">
+                document.addEventListener('DOMContentLoaded', (event) => {
+                dataLayer.push({
+                    'ecommerce': {
+                        'purchase': {
+                            'actionField': {
+                                'id': '<t t-esc="order.name"/>',                         // Transaction ID. Required for purchases and refunds.
+                                'affiliation': '<t t-esc="website.name"/>',
+                                'revenue': <t t-esc="order.amount_total"/>,                     // Total transaction value (incl. tax and shipping)
+                                'tax':<t t-esc="order.amount_tax"/>,
+                            },
+                            'products': [
+                                <t t-foreach="order.order_line" t-as="ol">
+                                    {
+                                    'name': '<t t-esc="ol.product_id.display_name.replace('\n', ' ')"/>',
+                                    'id': '<t t-esc="ol.product_id.default_code"/>',
+                                    'price': <t t-esc="ol.product_id.list_price"/>,
+                                    'brand': '<t t-esc="website.company_id.name"/>',
+                                    'category': '<t t-esc="ol.product_id.public_categ_ids and ol.product_id.public_categ_ids[0].name"/>',
+                                    'position': <t t-esc="ol.product_id.id"/>,
+                                    'quantity': <t t-esc="ol.product_uom_qty"/>
+                                    },
+                                </t>
+                            ]
+                        }
+                    }
+                });
+                });
+            </script>
+        </xpath>
+    </template>
+</odoo>
